@@ -1,41 +1,28 @@
-const admin = require('firebase-admin');
-const { firestoreConfig } = require('./constants');
+const axios = require('axios');
+const firestoreApiUrl = process.env.FIRESTORE_API_URL;
 
-admin.initializeApp({ credential: admin.credential.cert(firestoreConfig) });
-
-function handler(snap) {
-  const added = snap.docChanges()
-    .filter(({ type }) => type === 'added')
-    .map(({ doc }) => ({ id: doc.id, ...doc.data() }));
-  (added.length) && this.cb(added);
+function parseData({ fields, createTime }) {
+  return Object.assign(Object.keys(fields).reduce((acc, field) => ({ ...acc, [field]: fields[field].stringValue }), {}), { createTime });
 }
 
-class FirestoreHelper {
-  constructor(collection, updateCb) {
-    const db = admin.firestore();
-    this._collection = db.collection(collection);
-    this.cb = () => this.cb = updateCb;
-    this._collection.onSnapshot(handler.bind(this));
-  }
-
-  async getById(id) {
-    const document = await this._collection.doc(id).get();
-    return this.formatDocument(document);
-  }
-
-  async updateById(id, data) {
-    await this._collection.doc(id).update(data);
-    const document = await this._collection.doc(id).get();
-    return this.formatDocument(document);
-  }
-
-  formatDocument(document) {
-    const data = document.data();
-    return !data ? null : { 
-      ...data,
-      createTime: document.createTime.toDate()
-    };
-  }
+function queryForUpdate(fieldsToUpdate) {
+  return fieldsToUpdate.reduce((acc, field) => `${acc}updateMask.fieldPaths=${field}&`, '');
 }
 
-module.exports = FirestoreHelper;
+function bodyForUpdate(data) {
+  return { fields: Object.keys(data).reduce((acc, field) => ({ ...acc, [field]: { stringValue: data[field] }}),{})};
+}
+
+async function getById(collection, id) {
+  const { data } = await axios.get(`${firestoreApiUrl}/${collection}/${id}`);
+  return parseData(data);
+}
+
+async function updateById(collection, id, data, fieldsToUpdate) {
+  const { data: updatedData } = await axios.patch(`${firestoreApiUrl}/${collection}/${id}?${queryForUpdate(fieldsToUpdate)}`, bodyForUpdate(data));
+  return parseData(updatedData);
+}
+module.exports = {
+  getById,
+  updateById
+}

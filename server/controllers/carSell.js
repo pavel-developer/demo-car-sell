@@ -1,14 +1,14 @@
-const FirestoreHelper = require('../utils/firestore');
+const { getById, updateById } = require('../utils/firestore');
 const { notFoundMessage } = require('../utils/constants');
-const { sendMessage } = require('../utils/slack');
 
-const firestore = new FirestoreHelper('carSellListings', (added) => added.forEach(sendMessage));
+const collectionName = 'carSellListings';
+const fieldsToUpdate = ['consignPrice', 'dealerPrice', 'preferredSellingMethod'];
 
 module.exports = {
   getCarSell: async (request, response) => {
     try {
       const id = request.params.id
-      const carSell = await firestore.getById(id);
+      const carSell = await getById(collectionName, id);
       if (!carSell) {
         throw new Error(notFoundMessage);
       }
@@ -25,7 +25,7 @@ module.exports = {
     const { data } = request.body;
 
     try {
-      const carSell = await firestore.updateById(id, data);
+      const carSell = await updateById(collectionName, id, data, fieldsToUpdate);
       if (!carSell) {
         throw new Error(notFoundMessage);
       }

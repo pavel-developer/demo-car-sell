@@ -1,18 +1,4 @@
-const firestoreConfigFields = [
-  'type',
-  'project_id',
-  'private_key_id',
-  'private_key',
-  'client_email',
-  'client_id',
-  'auth_uri',
-  'token_uri',
-  'auth_provider_x509_cert_url',
-  'client_x509_cert_url'
-];
-
 module.exports = {
-  firestoreConfig: firestoreConfigFields.reduce((acc, field) => ({ ...acc, [field]: process.env[field] }), {}),
   notFoundMessage: 'Not Found',
   emailConfig: {
     from: 'demo@demo.demo',
